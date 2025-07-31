@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - 智能图书馆推荐系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-user-circle me-2"></i>个人中心
+        </h1>
+    </div>
+</div>
+
+<!-- 用户信息卡片 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card dashboard-card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                </div>
+                <h5 class="card-title">{{ current_user.username }}</h5>
+                <p class="text-muted">{{ current_user.email }}</p>
+                <div class="row text-center">
+                    <div class="col-6">
+                        <small class="text-muted">年龄</small>
+                        <p class="mb-0">{{ current_user.age or '未设置' }}</p>
+                    </div>
+                    <div class="col-6">
+                        <small class="text-muted">性别</small>
+                        <p class="mb-0">{{ current_user.gender or '未设置' }}</p>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">职业</small>
+                    <p class="mb-0">{{ current_user.occupation or '未设置' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>阅读统计</h5>
+            </div>
+            <div class="card-body">
+                <div class="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ borrowings|length }}</div>
+                        <div class="stat-label">借阅总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ ratings|length }}</div>
+                        <div class="stat-label">评分总数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">
+                            {% set active_borrowings = borrowings|selectattr('status', 'equalto', 'borrowed')|list %}
+                            {{ active_borrowings|length }}
+                        </div>
+                        <div class="stat-label">当前借阅</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">
+                            {% if ratings %}
+                                {{ "%.1f"|format(ratings|map(attribute='rating')|sum / ratings|length) }}
+                            {% else %}
+                                0.0
+                            {% endif %}
+                        </div>
+                        <div class="stat-label">平均评分</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 个性化推荐 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-magic me-2"></i>为您推荐</h5>
+            </div>
+            <div class="card-body">
+                <div id="personal-recommendations">
+                    <div class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">加载中...</span>
+                        </div>
+                        <p class="mt-2">正在为您生成个性化推荐...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 借阅历史 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-history me-2"></i>借阅历史</h5>
+            </div>
+            <div class="card-body">
+                {% if borrowings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>图书</th>
+                                <th>借阅日期</th>
+                                <th>应还日期</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for borrowing in borrowings %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-book text-primary me-2"></i>
+                                        <div>
+                                            <div class="fw-bold">{{ borrowing.book.title }}</div>
+                                            <small class="text-muted">{{ borrowing.book.author }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ borrowing.borrow_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ borrowing.due_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if borrowing.status == 'borrowed' %}
+                                        <span class="badge bg-primary">借阅中</span>
+                                    {% elif borrowing.status == 'returned' %}
+                                        <span class="badge bg-success">已归还</span>
+                                    {% elif borrowing.status == 'overdue' %}
+                                        <span class="badge bg-danger">已逾期</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if borrowing.status == 'borrowed' %}
+                                    <button class="btn btn-sm btn-success" onclick="returnBook({{ borrowing.id }})">
+                                        <i class="fas fa-undo me-1"></i>归还
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">暂无借阅记录</p>
+                    <a href="{{ url_for('books') }}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>浏览图书
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 评分记录 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-star me-2"></i>评分记录</h5>
+            </div>
+            <div class="card-body">
+                {% if ratings %}
+                <div class="row">
+                    {% for rating in ratings %}
+                    <div class="col-md-6 mb-3">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="card-title">{{ rating.book.title }}</h6>
+                                        <p class="text-muted small">{{ rating.book.author }}</p>
+                                        <div class="rating-stars mb-2">
+                                            {% for i in range(5) %}
+                                                {% if i < rating.rating %}
+                                                    <i class="fas fa-star text-warning"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-muted"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                            <span class="ms-2 text-muted">{{ rating.rating }}/5</span>
+                                        </div>
+                                        {% if rating.review %}
+                                        <p class="card-text small">{{ rating.review }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">{{ rating.created_at.strftime('%Y-%m-%d') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-star fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">暂无评分记录</p>
+                    <a href="{{ url_for('books') }}" class="btn btn-primary">
+                        <i class="fas fa-star me-2"></i>为图书评分
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 阅读偏好分析 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card dashboard-card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>阅读偏好分析</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>最常借阅的图书分类</h6>
+                        <div id="category-chart" style="height: 300px;">
+                            <!-- 这里可以添加图表 -->
+                            <div class="text-center py-4">
+                                <i class="fas fa-chart-pie fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">图表加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>阅读时间分布</h6>
+                        <div id="time-chart" style="height: 300px;">
+                            <!-- 这里可以添加图表 -->
+                            <div class="text-center py-4">
+                                <i class="fas fa-clock fa-2x text-muted mb-2"></i>
+                                <p class="text-muted">图表加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // 加载个性化推荐
+    loadPersonalRecommendations();
+    
+    // 加载阅读偏好分析
+    loadReadingAnalytics();
+});
+
+function loadPersonalRecommendations() {
+    $.get('/api/recommendations')
+        .done(function(data) {
+            if (data.success) {
+                displayPersonalRecommendations(data.recommendations);
+            } else {
+                $('#personal-recommendations').html(`
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        暂时无法生成推荐，请稍后再试。
+                    </div>
+                `);
+            }
+        })
+        .fail(function() {
+            $('#personal-recommendations').html(`
+                <div class="alert alert-danger">
+                    <i class="fas fa-times-circle me-2"></i>
+                    加载推荐失败，请检查网络连接。
+                </div>
+            `);
+        });
+}
+
+function displayPersonalRecommendations(recommendations) {
+    if (recommendations.length === 0) {
+        $('#personal-recommendations').html(`
+            <div class="text-center py-4">
+                <i class="fas fa-info-circle fa-2x text-muted mb-3"></i>
+                <p class="text-muted">暂无推荐，请先借阅一些图书或进行评分。</p>
+                <a href="/books" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>浏览图书
+                </a>
+            </div>
+        `);
+        return;
+    }
+    
+    let html = '<div class="row">';
+    recommendations.slice(0, 6).forEach(function(book) {
+        html += `
+            <div class="col-md-4 col-sm-6 mb-3">
+                <div class="card h-100 book-card" data-book-id="${book.id}">
+                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 150px;">
+                        <i class="fas fa-book fa-2x text-muted"></i>
+                    </div>
+                    <div class="card-body">
+                        <h6 class="card-title text-truncate">${book.title}</h6>
+                        <p class="card-text text-muted small">${book.author}</p>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge bg-secondary">${book.category}</span>
+                            <small class="text-muted">${book.publish_year}</small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a href="/book/${book.id}" class="btn btn-sm btn-primary w-100">
+                            查看详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    html += '</div>';
+    
+    $('#personal-recommendations').html(html);
+}
+
+function loadReadingAnalytics() {
+    // 这里可以添加图表库（如Chart.js）来显示阅读偏好分析
+    // 目前显示占位符
+    console.log('加载阅读偏好分析...');
+}
+</script>
+{% endblock %}
