@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - 智能图书馆推荐系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 图书详情 -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">{{ book.title }}</h2>
+                <p class="text-muted lead">{{ book.author }}</p>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>分类：</strong> <span class="badge bg-secondary">{{ book.category }}</span></p>
+                        <p><strong>出版社：</strong> {{ book.publisher }}</p>
+                        <p><strong>出版年份：</strong> {{ book.publish_year }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>页数：</strong> {{ book.pages }}页</p>
+                        <p><strong>语言：</strong> {{ book.language }}</p>
+                        <p><strong>ISBN：</strong> {{ book.isbn }}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h5>图书简介</h5>
+                    <p>{{ book.description or '暂无简介' }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h5>库存状态</h5>
+                    <p>
+                        <span class="{% if book.available_copies > 0 %}text-success{% else %}text-danger{% endif %}">
+                            <i class="fas fa-{% if book.available_copies > 0 %}check-circle{% else %}times-circle{% endif %} me-1"></i>
+                            {% if book.available_copies > 0 %}
+                                可借阅 ({{ book.available_copies }}/{{ book.total_copies }})
+                            {% else %}
+                                无库存
+                            {% endif %}
+                        </span>
+                    </p>
+                </div>
+                
+                {% if current_user.is_authenticated %}
+                <div class="d-flex gap-2">
+                    {% if book.available_copies > 0 %}
+                    <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-book me-1"></i>借阅
+                        </button>
+                    </form>
+                    {% endif %}
+                    
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#ratingModal">
+                        <i class="fas fa-star me-1"></i>评分
+                    </button>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    请 <a href="{{ url_for('login') }}" class="alert-link">登录</a> 后借阅图书或评分
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- 评分和评论 -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-star me-2"></i>用户评分
+                </h5>
+            </div>
+            <div class="card-body">
+                {% set ratings = book.ratings %}
+                {% if ratings %}
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h3 class="text-warning">
+                            {% set avg_rating = (ratings|sum(attribute='rating') / ratings|length) %}
+                            {{ "%.1f"|format(avg_rating) }}
+                        </h3>
+                        <div class="mb-2">
+                            {% for i in range(5) %}
+                                {% if i < avg_rating|int %}
+                                    <i class="fas fa-star text-warning"></i>
+                                {% elif avg_rating - i >= 0.5 %}
+                                    <i class="fas fa-star-half-alt text-warning"></i>
+                                {% else %}
+                                    <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <p class="text-muted">{{ ratings|length }} 条评价</p>
+                    </div>
+                    <div class="col-md-8">
+                        {% for rating in ratings[:5] %}
+                        <div class="border-bottom pb-2 mb-2">
+                            <div class="d-flex justify-content-between">
+                                <span class="fw-bold">{{ rating.user.username }}</span>
+                                <span class="text-warning">
+                                    {% for i in range(5) %}
+                                        {% if i < rating.rating %}
+                                            <i class="fas fa-star"></i>
+                                        {% else %}
+                                            <i class="far fa-star"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </span>
+                            </div>
+                            {% if rating.review %}
+                            <p class="mb-1">{{ rating.review }}</p>
+                            {% endif %}
+                            <small class="text-muted">{{ rating.created_at.strftime('%Y-%m-%d') }}</small>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">暂无评分</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="col-md-4">
+        <!-- 相似图书 -->
+        {% if similar_books %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-thumbs-up me-2"></i>相似图书
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for similar_book in similar_books %}
+                <div class="d-flex mb-3">
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">
+                            <a href="{{ url_for('book_detail', book_id=similar_book.id) }}" class="text-decoration-none">
+                                {{ similar_book.title }}
+                            </a>
+                        </h6>
+                        <p class="text-muted small mb-1">{{ similar_book.author }}</p>
+                        <span class="badge bg-secondary">{{ similar_book.category }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- 快速操作 -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>快速操作
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('books') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-search me-1"></i>浏览更多图书
+                    </a>
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-user me-1"></i>个人中心
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 评分模态框 -->
+{% if current_user.is_authenticated %}
+<div class="modal fade" id="ratingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">为《{{ book.title }}》评分</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('rate_book', book_id=book.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">评分</label>
+                        <div class="rating-input">
+                            {% for i in range(1, 6) %}
+                            <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
+                            <label for="star{{ i }}" class="star-label">
+                                <i class="far fa-star"></i>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="review" class="form-label">评论（可选）</label>
+                        <textarea class="form-control" id="review" name="review" rows="3" placeholder="分享您的阅读感受..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">提交评分</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<style>
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating-input input {
+    display: none;
+}
+
+.star-label {
+    cursor: pointer;
+    font-size: 1.5rem;
+    color: #ddd;
+    margin: 0 2px;
+}
+
+.rating-input input:checked ~ .star-label,
+.rating-input .star-label:hover,
+.rating-input .star-label:hover ~ .star-label {
+    color: #ffc107;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+
+{% block title %}个人中心 - 智能图书馆推荐系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 用户信息卡片 -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-user me-2"></i>用户信息
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-3">
+                    <i class="fas fa-user-circle display-4 text-primary"></i>
+                </div>
+                <h6 class="card-title">{{ current_user.username }}</h6>
+                <p class="card-text text-muted">{{ current_user.email }}</p>
+                {% if current_user.occupation %}
+                <p class="card-text">
+                    <small class="text-muted">
+                        <i class="fas fa-briefcase me-1"></i>{{ current_user.occupation }}
+                    </small>
+                </p>
+                {% endif %}
+                <p class="card-text">
+                    <small class="text-muted">
+                        <i class="fas fa-calendar me-1"></i>注册时间：{{ current_user.created_at.strftime('%Y-%m-%d') }}
+                    </small>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 统计信息 -->
+    <div class="col-md-8 mb-4">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-book fa-2x mb-2"></i>
+                        <h4>{{ borrowings|length }}</h4>
+                        <p class="mb-0">借阅总数</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h4>{{ borrowings|selectattr('status', 'equalto', 'returned')|list|length }}</h4>
+                        <p class="mb-0">已归还</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-clock fa-2x mb-2"></i>
+                        <h4>{{ borrowings|selectattr('status', 'equalto', 'borrowed')|list|length }}</h4>
+                        <p class="mb-0">借阅中</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 个性化推荐 -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-magic me-2"></i>为您推荐
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for book in recommended_books %}
+                    <div class="col-md-3 col-sm-6 mb-3">
+                        <div class="card h-100 book-card">
+                            <div class="card-body">
+                                <h6 class="card-title">{{ book.title }}</h6>
+                                <p class="card-text text-muted small">{{ book.author }}</p>
+                                <p class="card-text">
+                                    <span class="badge bg-secondary">{{ book.category }}</span>
+                                </p>
+                            </div>
+                            <div class="card-footer bg-transparent">
+                                <a href="{{ url_for('book_detail', book_id=book.id) }}" class="btn btn-sm btn-primary w-100">
+                                    查看详情
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 借阅历史 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>借阅历史
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if borrowings %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>图书标题</th>
+                                <th>借阅日期</th>
+                                <th>应还日期</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for borrowing in borrowings %}
+                            <tr>
+                                <td>
+                                    <a href="{{ url_for('book_detail', book_id=borrowing.book.id) }}" class="text-decoration-none">
+                                        {{ borrowing.book.title }}
+                                    </a>
+                                </td>
+                                <td>{{ borrowing.borrow_date.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ borrowing.due_date.strftime('%Y-%m-%d') }}</td>
+                                <td>
+                                    {% if borrowing.status == 'returned' %}
+                                        <span class="badge bg-success">已归还</span>
+                                    {% elif borrowing.status == 'borrowed' %}
+                                        <span class="badge bg-warning">借阅中</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">逾期</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if borrowing.status == 'borrowed' %}
+                                    <form method="POST" action="{{ url_for('return_book', borrowing_id=borrowing.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            <i class="fas fa-undo me-1"></i>归还
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
+                    <p class="text-muted">您还没有借阅记录</p>
+                    <a href="{{ url_for('books') }}" class="btn btn-primary">
+                        <i class="fas fa-search me-2"></i>浏览图书
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
