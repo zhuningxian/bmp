@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - 智能图书馆推荐系统{% endblock %}
+
+{% block content %}
+<!-- 英雄区域 -->
+<div class="hero-section bg-primary text-white py-5 rounded mb-4">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-6">
+                <h1 class="display-4 fw-bold">发现你的下一本好书</h1>
+                <p class="lead">基于智能推荐算法，为您推荐最适合的图书</p>
+                <a href="{{ url_for('books') }}" class="btn btn-light btn-lg">
+                    <i class="fas fa-search me-2"></i>浏览图书
+                </a>
+            </div>
+            <div class="col-md-6 text-center">
+                <i class="fas fa-book-open display-1"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 热门图书 -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-fire text-danger me-2"></i>热门图书</h2>
+        <a href="{{ url_for('books') }}" class="btn btn-outline-primary">查看更多</a>
+    </div>
+    
+    <div class="row">
+        {% for book in popular_books %}
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100 book-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ book.title }}</h5>
+                    <p class="card-text text-muted">{{ book.author }}</p>
+                    <p class="card-text">
+                        <span class="badge bg-secondary">{{ book.category }}</span>
+                        <small class="text-muted ms-2">{{ book.publish_year }}</small>
+                    </p>
+                    <p class="card-text small">{{ book.description[:100] }}...</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-success">
+                            <i class="fas fa-check-circle me-1"></i>可借阅
+                        </span>
+                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="btn btn-sm btn-primary">
+                            查看详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- 最新图书 -->
+<section class="mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2><i class="fas fa-star text-warning me-2"></i>最新图书</h2>
+        <a href="{{ url_for('books') }}" class="btn btn-outline-primary">查看更多</a>
+    </div>
+    
+    <div class="row">
+        {% for book in recent_books %}
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="card h-100 book-card">
+                <div class="card-body">
+                    <h5 class="card-title">{{ book.title }}</h5>
+                    <p class="card-text text-muted">{{ book.author }}</p>
+                    <p class="card-text">
+                        <span class="badge bg-info">{{ book.category }}</span>
+                        <small class="text-muted ms-2">{{ book.publish_year }}</small>
+                    </p>
+                    <p class="card-text small">{{ book.description[:100] }}...</p>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="text-success">
+                            <i class="fas fa-check-circle me-1"></i>可借阅
+                        </span>
+                        <a href="{{ url_for('book_detail', book_id=book.id) }}" class="btn btn-sm btn-primary">
+                            查看详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- 功能特色 -->
+<section class="mb-5">
+    <h2 class="text-center mb-4">系统特色</h2>
+    <div class="row">
+        <div class="col-md-4 text-center mb-3">
+            <div class="feature-card p-4">
+                <i class="fas fa-brain text-primary display-4 mb-3"></i>
+                <h4>智能推荐</h4>
+                <p class="text-muted">基于协同过滤、内容推荐和矩阵分解的混合推荐算法</p>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-3">
+            <div class="feature-card p-4">
+                <i class="fas fa-chart-line text-success display-4 mb-3"></i>
+                <h4>行为分析</h4>
+                <p class="text-muted">深度分析用户借阅、评分、浏览等行为模式</p>
+            </div>
+        </div>
+        <div class="col-md-4 text-center mb-3">
+            <div class="feature-card p-4">
+                <i class="fas fa-users text-info display-4 mb-3"></i>
+                <h4>个性化服务</h4>
+                <p class="text-muted">为每位用户提供个性化的图书推荐服务</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- 快速操作 -->
+{% if current_user.is_authenticated %}
+<section class="mb-5">
+    <h2 class="text-center mb-4">快速操作</h2>
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="row">
+                <div class="col-md-4 text-center mb-3">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-primary btn-lg w-100">
+                        <i class="fas fa-tachometer-alt me-2"></i>个人中心
+                    </a>
+                </div>
+                <div class="col-md-4 text-center mb-3">
+                    <a href="{{ url_for('books') }}" class="btn btn-outline-success btn-lg w-100">
+                        <i class="fas fa-search me-2"></i>搜索图书
+                    </a>
+                </div>
+                <div class="col-md-4 text-center mb-3">
+                    <a href="{{ url_for('books') }}" class="btn btn-outline-info btn-lg w-100">
+                        <i class="fas fa-book me-2"></i>浏览分类
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% else %}
+<section class="mb-5">
+    <div class="text-center">
+        <h2>开始您的阅读之旅</h2>
+        <p class="lead text-muted">注册账号，享受个性化推荐服务</p>
+        <div class="d-flex justify-content-center gap-3">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-user-plus me-2"></i>立即注册
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-sign-in-alt me-2"></i>登录
+            </a>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

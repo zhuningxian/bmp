@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+
+{% block title %}系统统计 - 智能图书馆推荐系统{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- 统计卡片 -->
+    <div class="col-md-3 mb-4">
+        <div class="stat-card">
+            <i class="fas fa-users fa-2x mb-3"></i>
+            <h4>{{ total_users }}</h4>
+            <p>注册用户</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card">
+            <i class="fas fa-book fa-2x mb-3"></i>
+            <h4>{{ total_books }}</h4>
+            <p>图书总数</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card">
+            <i class="fas fa-exchange-alt fa-2x mb-3"></i>
+            <h4>{{ total_borrowings }}</h4>
+            <p>借阅记录</p>
+        </div>
+    </div>
+    <div class="col-md-3 mb-4">
+        <div class="stat-card">
+            <i class="fas fa-star fa-2x mb-3"></i>
+            <h4>{{ total_ratings }}</h4>
+            <p>用户评分</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 借阅趋势图 -->
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>借阅趋势
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="borrowingsChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 热门分类 -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-pie me-2"></i>热门分类
+                </h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoriesChart" width="300" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 借阅数据表格 -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-table me-2"></i>月度借阅统计
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>月份</th>
+                                <th>借阅数量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for month, count in borrowings_by_month %}
+                            <tr>
+                                <td>{{ month }}</td>
+                                <td>{{ count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 分类统计表格 -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>分类借阅统计
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>分类</th>
+                                <th>借阅次数</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category, count in popular_categories %}
+                            <tr>
+                                <td>{{ category }}</td>
+                                <td>{{ count }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>系统管理
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <a href="{{ url_for('generate_data') }}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-database me-2"></i>生成测试数据
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-success w-100" onclick="exportData()">
+                            <i class="fas fa-download me-2"></i>导出数据
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-warning w-100" onclick="refreshStats()">
+                            <i class="fas fa-sync-alt me-2"></i>刷新统计
+                        </button>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <button class="btn btn-outline-info w-100" onclick="showSystemInfo()">
+                            <i class="fas fa-info-circle me-2"></i>系统信息
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 借阅趋势图
+const borrowingsCtx = document.getElementById('borrowingsChart').getContext('2d');
+const borrowingsChart = new Chart(borrowingsCtx, {
+    type: 'line',
+    data: {
+        labels: [{% for month, count in borrowings_by_month %}'{{ month }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            label: '借阅数量',
+            data: [{% for month, count in borrowings_by_month %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'top',
+            },
+            title: {
+                display: true,
+                text: '月度借阅趋势'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true
+            }
+        }
+    }
+});
+
+// 分类饼图
+const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
+const categoriesChart = new Chart(categoriesCtx, {
+    type: 'doughnut',
+    data: {
+        labels: [{% for category, count in popular_categories %}'{{ category }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+            data: [{% for category, count in popular_categories %}{{ count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)',
+                'rgba(255, 206, 86, 0.8)',
+                'rgba(75, 192, 192, 0.8)',
+                'rgba(153, 102, 255, 0.8)',
+                'rgba(255, 159, 64, 0.8)',
+                'rgba(199, 199, 199, 0.8)',
+                'rgba(83, 102, 255, 0.8)',
+                'rgba(255, 99, 132, 0.8)',
+                'rgba(54, 162, 235, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: {
+                position: 'bottom',
+            },
+            title: {
+                display: true,
+                text: '分类借阅分布'
+            }
+        }
+    }
+});
+
+// 导出数据
+function exportData() {
+    // 这里可以实现数据导出功能
+    alert('数据导出功能开发中...');
+}
+
+// 刷新统计
+function refreshStats() {
+    location.reload();
+}
+
+// 显示系统信息
+function showSystemInfo() {
+    const info = `
+系统信息：
+- 数据库：SQLite
+- 推荐算法：协同过滤 + 内容推荐 + 矩阵分解
+- 前端框架：Bootstrap 5
+- 后端框架：Flask
+- 机器学习库：scikit-learn
+    `;
+    alert(info);
+}
+</script>
+{% endblock %}
