@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+
+{% block title %}用户推荐 - 图书馆智能推荐系统{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- 用户信息 -->
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="card-title mb-0">
+                                <i class="fas fa-user-circle me-2 text-primary"></i>
+                                <span id="userName">用户</span> 的个性化推荐
+                            </h2>
+                            <p class="text-muted mt-2" id="userInfo">正在加载用户信息...</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-outline-primary dropdown-toggle" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cog me-1"></i>推荐设置
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="changeRecommendationType('adaptive')">
+                                        <i class="fas fa-magic me-2"></i>自适应推荐
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="changeRecommendationType('collaborative')">
+                                        <i class="fas fa-users me-2"></i>协同过滤
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="changeRecommendationType('content')">
+                                        <i class="fas fa-file-alt me-2"></i>内容过滤
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="changeRecommendationType('hybrid')">
+                                        <i class="fas fa-layer-group me-2"></i>混合推荐
+                                    </a></li>
+                                </ul>
+                            </div>
+                            <button class="btn btn-primary ms-2" onclick="refreshRecommendations()">
+                                <i class="fas fa-sync-alt me-1"></i>刷新推荐
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 推荐类型标签 -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                当前推荐算法: <strong id="currentAlgorithm">自适应推荐</strong>
+                <span id="algorithmDescription" class="ms-2">系统会根据您的数据量自动选择最适合的推荐策略</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 推荐结果 -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-star me-2"></i>为您推荐
+                        <span class="badge bg-primary ms-2" id="recommendationCount">0</span>
+                    </h5>
+                </div>
+                <div class="card-body" id="recommendationsContainer">
+                    <div class="text-center">
+                        <div class="spinner"></div>
+                        <p class="mt-3">正在生成个性化推荐...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="col-lg-4">
+            <!-- 用户统计 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-pie me-2"></i>阅读统计
+                    </h6>
+                </div>
+                <div class="card-body" id="userStatsContainer">
+                    <div class="text-center">
+                        <div class="spinner"></div>
+                        <p class="mt-3">加载中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 相似用户 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-user-friends me-2"></i>相似用户
+                    </h6>
+                </div>
+                <div class="card-body" id="similarUsersContainer">
+                    <div class="text-center">
+                        <div class="spinner"></div>
+                        <p class="mt-3">加载中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 热门分类 -->
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-tags me-2"></i>热门分类
+                    </h6>
+                </div>
+                <div class="card-body" id="categoriesContainer">
+                    <div class="text-center">
+                        <div class="spinner"></div>
+                        <p class="mt-3">加载中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 分类推荐 -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <h3 class="mb-4">
+                <i class="fas fa-layer-group me-2"></i>分类推荐
+            </h3>
+            <div id="categoryRecommendationsContainer">
+                <div class="text-center">
+                    <div class="spinner"></div>
+                    <p class="mt-3">加载分类推荐...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 图书详情模态框 -->
+<div class="modal fade" id="bookModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">图书详情</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="bookModalBody">
+                <div class="text-center">
+                    <div class="spinner"></div>
+                    <p class="mt-3">加载中...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 评分模态框 -->
+<div class="modal fade" id="ratingModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">图书评分</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="ratingForm">
+                    <input type="hidden" id="ratingBookId">
+                    <div class="mb-3">
+                        <label class="form-label">评分:</label>
+                        <div class="rating-input">
+                            <input type="radio" name="rating" value="1" id="star1">
+                            <label for="star1"><i class="fas fa-star"></i></label>
+                            <input type="radio" name="rating" value="2" id="star2">
+                            <label for="star2"><i class="fas fa-star"></i></label>
+                            <input type="radio" name="rating" value="3" id="star3">
+                            <label for="star3"><i class="fas fa-star"></i></label>
+                            <input type="radio" name="rating" value="4" id="star4">
+                            <label for="star4"><i class="fas fa-star"></i></label>
+                            <input type="radio" name="rating" value="5" id="star5">
+                            <label for="star5"><i class="fas fa-star"></i></label>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="reviewText" class="form-label">评论 (可选):</label>
+                        <textarea class="form-control" id="reviewText" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" onclick="submitRating()">提交评分</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.rating-input {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: center;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.rating-input label {
+    color: #ddd;
+    font-size: 1.5rem;
+    padding: 0 2px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input[type="radio"]:checked ~ label {
+    color: #ffc107;
+}
+
+.recommendation-item {
+    border: 1px solid #dee2e6;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.recommendation-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    border-color: #007bff;
+}
+
+.recommendation-score {
+    background: linear-gradient(45deg, #007bff, #17a2b8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.category-chip {
+    display: inline-block;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 20px;
+    padding: 5px 15px;
+    margin: 2px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.category-chip:hover {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(45deg, #007bff, #17a2b8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentUserId = {{ user_id }};
+let currentRecommendationType = 'adaptive';
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadUserInfo();
+    loadRecommendations();
+    loadUserStats();
+    loadSimilarUsers();
+    loadCategories();
+    loadCategoryRecommendations();
+});
+
+// 加载用户信息
+async function loadUserInfo() {
+    try {
+        // 模拟用户信息（实际项目中应该从API获取）
+        const users = {
+            1: {name: '张三', age: 25, occupation: '软件工程师'},
+            2: {name: '李四', age: 30, occupation: '教师'},
+            3: {name: '王五', age: 28, occupation: '医生'},
+            4: {name: '赵六', age: 22, occupation: '学生'},
+            5: {name: '钱七', age: 35, occupation: '律师'},
+            6: {name: '孙八', age: 27, occupation: '设计师'},
+            7: {name: '周九', age: 32, occupation: '记者'},
+            8: {name: '吴十', age: 26, occupation: '会计'},
+            9: {name: '郑一', age: 29, occupation: '研究员'},
+            10: {name: '王二', age: 24, occupation: '程序员'}
+        };
+        
+        const user = users[currentUserId] || {name: '未知用户', age: 0, occupation: '未知'};
+        
+        document.getElementById('userName').textContent = user.name;
+        document.getElementById('userInfo').textContent = 
+            `${user.age}岁 · ${user.occupation} · 正在为您分析阅读偏好...`;
+            
+    } catch (error) {
+        console.error('加载用户信息失败:', error);
+    }
+}
+
+// 加载推荐结果
+async function loadRecommendations() {
+    try {
+        showLoading('recommendationsContainer');
+        
+        const response = await fetch(`/api/recommendations/${currentUserId}?type=${currentRecommendationType}&limit=10`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            displayRecommendations(data.recommendations);
+            document.getElementById('recommendationCount').textContent = data.recommendations.length;
+        } else {
+            showError('加载推荐失败: ' + data.message, 'recommendationsContainer');
+        }
+    } catch (error) {
+        showError('网络错误，无法加载推荐', 'recommendationsContainer');
+    }
+}
+
+// 显示推荐结果
+function displayRecommendations(recommendations) {
+    const container = document.getElementById('recommendationsContainer');
+    
+    if (recommendations.length === 0) {
+        container.innerHTML = `
+            <div class="text-center text-muted">
+                <i class="fas fa-search fa-3x mb-3"></i>
+                <h5>暂无推荐</h5>
+                <p>系统正在学习您的阅读偏好，请先对一些图书进行评分。</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    
+    recommendations.forEach((book, index) => {
+        html += `
+            <div class="recommendation-item">
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="mb-0">${book.title}</h5>
+                            <span class="recommendation-score">
+                                推荐度: ${book.recommendation_score}
+                            </span>
+                        </div>
+                        
+                        <p class="text-muted mb-2">
+                            <i class="fas fa-user me-1"></i>${book.author || '未知作者'}
+                            <span class="mx-2">·</span>
+                            <i class="fas fa-calendar me-1"></i>${book.publication_year || '未知年份'}
+                            <span class="mx-2">·</span>
+                            <span class="category-badge">${book.category || '未分类'}</span>
+                        </p>
+                        
+                        <p class="text-truncate mb-3" style="max-height: 2.5rem;">
+                            ${book.description || '暂无描述'}
+                        </p>
+                        
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-primary btn-sm" onclick="showBookDetails(${book.id})">
+                                <i class="fas fa-eye me-1"></i>查看详情
+                            </button>
+                            <button class="btn btn-outline-warning btn-sm" onclick="showRatingModal(${book.id}, '${book.title}')">
+                                <i class="fas fa-star me-1"></i>评分
+                            </button>
+                            <button class="btn btn-outline-info btn-sm" onclick="explainRecommendation(${book.id})">
+                                <i class="fas fa-question-circle me-1"></i>为什么推荐
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 text-center">
+                        <div class="recommendation-rank">
+                            <div class="h2 text-primary mb-0">#${index + 1}</div>
+                            <small class="text-muted">推荐排名</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// 加载用户统计
+async function loadUserStats() {
+    try {
+        // 模拟统计数据
+        const stats = {
+            borrowedBooks: Math.floor(Math.random() * 20) + 5,
+            ratedBooks: Math.floor(Math.random() * 15) + 3,
+            favoriteCategory: ['计算机', '文学', '历史', '科学'][Math.floor(Math.random() * 4)],
+            avgRating: (Math.random() * 2 + 3).toFixed(1)
+        };
+        
+        document.getElementById('userStatsContainer').innerHTML = `
+            <div class="row text-center g-3">
+                <div class="col-6">
+                    <div class="stat-item">
+                        <div class="h4 text-primary mb-0">${stats.borrowedBooks}</div>
+                        <small class="text-muted">借阅图书</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-item">
+                        <div class="h4 text-success mb-0">${stats.ratedBooks}</div>
+                        <small class="text-muted">评分图书</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-item">
+                        <div class="h6 text-info mb-0">${stats.favoriteCategory}</div>
+                        <small class="text-muted">偏爱分类</small>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="stat-item">
+                        <div class="h6 text-warning mb-0">${stats.avgRating}</div>
+                        <small class="text-muted">平均评分</small>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        showError('加载统计数据失败', 'userStatsContainer');
+    }
+}
+
+// 加载相似用户
+async function loadSimilarUsers() {
+    try {
+        const response = await fetch(`/api/users/${currentUserId}/similar?limit=5`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            displaySimilarUsers(data.similar_users);
+        } else {
+            document.getElementById('similarUsersContainer').innerHTML = 
+                '<p class="text-muted text-center">暂无相似用户数据</p>';
+        }
+    } catch (error) {
+        document.getElementById('similarUsersContainer').innerHTML = 
+            '<p class="text-muted text-center">加载失败</p>';
+    }
+}
+
+// 显示相似用户
+function displaySimilarUsers(users) {
+    const container = document.getElementById('similarUsersContainer');
+    
+    if (users.length === 0) {
+        container.innerHTML = '<p class="text-muted text-center">暂无相似用户</p>';
+        return;
+    }
+    
+    let html = '';
+    
+    users.forEach(user => {
+        html += `
+            <div class="d-flex align-items-center mb-3">
+                <div class="user-avatar me-3">
+                    ${user.username.charAt(0)}
+                </div>
+                <div class="flex-grow-1">
+                    <div class="fw-bold">${user.username}</div>
+                    <small class="text-muted">相似度: ${(user.similarity_score * 100).toFixed(1)}%</small>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" onclick="viewUserRecommendations(${user.id})">
+                    <i class="fas fa-eye"></i>
+                </button>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+// 切换推荐类型
+function changeRecommendationType(type) {
+    currentRecommendationType = type;
+    
+    const algorithms = {
+        'adaptive': {name: '自适应推荐', desc: '系统会根据您的数据量自动选择最适合的推荐策略'},
+        'collaborative': {name: '协同过滤', desc: '基于相似用户的喜好为您推荐图书'},
+        'content': {name: '内容过滤', desc: '基于图书内容特征为您推荐相似的图书'},
+        'hybrid': {name: '混合推荐', desc: '结合多种算法为您提供更准确的推荐'}
+    };
+    
+    const algorithm = algorithms[type];
+    document.getElementById('currentAlgorithm').textContent = algorithm.name;
+    document.getElementById('algorithmDescription').textContent = algorithm.desc;
+    
+    loadRecommendations();
+}
+
+// 刷新推荐
+function refreshRecommendations() {
+    loadRecommendations();
+    showSuccess('推荐已刷新');
+}
+
+// 显示图书详情
+async function showBookDetails(bookId) {
+    try {
+        showLoading('bookModalBody');
+        
+        const response = await fetch(`/api/books/${bookId}/recommendations`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            displayBookDetails(data);
+        } else {
+            showError('加载图书详情失败', 'bookModalBody');
+        }
+        
+        new bootstrap.Modal(document.getElementById('bookModal')).show();
+    } catch (error) {
+        showError('网络错误', 'bookModalBody');
+    }
+}
+
+// 显示评分模态框
+function showRatingModal(bookId, bookTitle) {
+    document.getElementById('ratingBookId').value = bookId;
+    document.querySelector('#ratingModal .modal-title').textContent = `为《${bookTitle}》评分`;
+    
+    // 重置表单
+    document.getElementById('ratingForm').reset();
+    document.getElementById('reviewText').value = '';
+    
+    new bootstrap.Modal(document.getElementById('ratingModal')).show();
+}
+
+// 提交评分
+async function submitRating() {
+    try {
+        const bookId = document.getElementById('ratingBookId').value;
+        const rating = document.querySelector('input[name="rating"]:checked')?.value;
+        const review = document.getElementById('reviewText').value;
+        
+        if (!rating) {
+            alert('请选择评分');
+            return;
+        }
+        
+        const response = await fetch('/api/users/' + currentUserId + '/rating', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                user_id: currentUserId,
+                book_id: parseInt(bookId),
+                rating: parseInt(rating),
+                review: review
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            bootstrap.Modal.getInstance(document.getElementById('ratingModal')).hide();
+            showSuccess('评分提交成功！');
+            // 重新加载推荐
+            setTimeout(() => {
+                loadRecommendations();
+            }, 1000);
+        } else {
+            alert('评分失败: ' + data.message);
+        }
+    } catch (error) {
+        alert('网络错误，评分失败');
+    }
+}
+
+// 解释推荐原因
+async function explainRecommendation(bookId) {
+    try {
+        const response = await fetch(`/api/recommendations/${currentUserId}/${bookId}/explain`);
+        const data = await response.json();
+        
+        if (data.status === 'success') {
+            const explanations = data.explanations.join('<br>');
+            alert(`推荐原因：\n\n${explanations.replace(/<br>/g, '\n')}`);
+        } else {
+            alert('无法获取推荐原因');
+        }
+    } catch (error) {
+        alert('网络错误');
+    }
+}
+
+// 其他辅助函数
+function loadCategories() {
+    // 加载热门分类
+    fetch('/api/categories')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                displayCategories(data.categories);
+            }
+        })
+        .catch(error => {
+            console.error('加载分类失败:', error);
+        });
+}
+
+function displayCategories(categories) {
+    const container = document.getElementById('categoriesContainer');
+    let html = '';
+    
+    categories.slice(0, 6).forEach(category => {
+        html += `
+            <span class="category-chip" onclick="getCategoryRecommendations('${category}')">
+                ${category}
+            </span>
+        `;
+    });
+    
+    container.innerHTML = html;
+}
+
+function loadCategoryRecommendations() {
+    // 加载分类推荐的实现
+    document.getElementById('categoryRecommendationsContainer').innerHTML = 
+        '<p class="text-center text-muted">选择上方分类查看相关推荐</p>';
+}
+
+function getCategoryRecommendations(category) {
+    window.location.href = `/search?category=${encodeURIComponent(category)}`;
+}
+
+function viewUserRecommendations(userId) {
+    window.location.href = `/user/${userId}`;
+}
+</script>
+{% endblock %}
