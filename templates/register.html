@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}注册 - 智能图书馆推荐系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-5">
+                <div class="text-center mb-4">
+                    <i class="fas fa-user-plus fa-3x text-primary mb-3"></i>
+                    <h2 class="card-title">用户注册</h2>
+                    <p class="text-muted">加入智能图书馆推荐系统，开启个性化阅读之旅</p>
+                </div>
+                
+                {% if error %}
+                <div class="alert alert-danger" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                </div>
+                {% endif %}
+                
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="username" class="form-label">
+                                <i class="fas fa-user me-2"></i>用户名 *
+                            </label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="email" class="form-label">
+                                <i class="fas fa-envelope me-2"></i>邮箱 *
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="password" class="form-label">
+                                <i class="fas fa-lock me-2"></i>密码 *
+                            </label>
+                            <input type="password" class="form-control" id="password" name="password" required>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="age" class="form-label">
+                                <i class="fas fa-birthday-cake me-2"></i>年龄
+                            </label>
+                            <input type="number" class="form-control" id="age" name="age" min="1" max="120">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="gender" class="form-label">
+                                <i class="fas fa-venus-mars me-2"></i>性别
+                            </label>
+                            <select class="form-select" id="gender" name="gender">
+                                <option value="">请选择</option>
+                                <option value="男">男</option>
+                                <option value="女">女</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="occupation" class="form-label">
+                                <i class="fas fa-briefcase me-2"></i>职业
+                            </label>
+                            <select class="form-select" id="occupation" name="occupation">
+                                <option value="">请选择</option>
+                                <option value="学生">学生</option>
+                                <option value="教师">教师</option>
+                                <option value="工程师">工程师</option>
+                                <option value="医生">医生</option>
+                                <option value="律师">律师</option>
+                                <option value="会计师">会计师</option>
+                                <option value="销售员">销售员</option>
+                                <option value="程序员">程序员</option>
+                                <option value="设计师">设计师</option>
+                                <option value="研究员">研究员</option>
+                                <option value="作家">作家</option>
+                                <option value="记者">记者</option>
+                                <option value="公务员">公务员</option>
+                                <option value="自由职业">自由职业</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100 mb-3">
+                        <i class="fas fa-user-plus me-2"></i>注册
+                    </button>
+                </form>
+                
+                <div class="text-center">
+                    <p class="mb-0">已有账号？ 
+                        <a href="{{ url_for('login') }}" class="text-decoration-none">立即登录</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
